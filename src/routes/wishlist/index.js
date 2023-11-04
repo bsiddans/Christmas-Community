@@ -2,6 +2,7 @@ const createDOMPurify = require('dompurify')
 const express = require('express')
 const { JSDOM } = require('jsdom')
 const marked = require('marked')
+const passport = require('passport')
 
 const publicRoute = require('../../middlewares/publicRoute')
 const verifyAuth = require('../../middlewares/verifyAuth')
@@ -24,7 +25,7 @@ module.exports = (db) => {
 
   const wishlistManager = _CC.wishlistManager
 
-  router.get('/', publicRoute(), async (req, res) => {
+  router.get('/', passport.authenticate('reverseproxy'), async (req, res) => {
     const docs = await db.allDocs({ include_docs: true })
     if (global._CC.config.wishlist.singleList) {
       for (const row of docs.rows) {
@@ -47,7 +48,7 @@ module.exports = (db) => {
     next()
   }
 
-  router.get('/:user', publicRoute(), redirectIfSingleUserMode, async (req, res) => {
+  router.get('/:user', passport.authenticate('reverseproxy'), redirectIfSingleUserMode, async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const items = await wishlist.itemsVisibleToUser(req.user._id)
@@ -66,7 +67,7 @@ module.exports = (db) => {
     }
   })
 
-  router.post('/:user', verifyAuth(), async (req, res) => {
+  router.post('/:user', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
 
@@ -93,7 +94,7 @@ module.exports = (db) => {
     res.redirect(`/wishlist/${req.params.user}`)
   })
 
-  router.post('/:user/pledge/:itemId', verifyAuth(), async (req, res) => {
+  router.post('/:user/pledge/:itemId', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const item = await wishlist.get(req.params.itemId)
@@ -110,7 +111,7 @@ module.exports = (db) => {
     res.redirect(`/wishlist/${req.params.user}`)
   })
 
-  router.post('/:user/unpledge/:itemId', verifyAuth(), async (req, res) => {
+  router.post('/:user/unpledge/:itemId', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const item = await wishlist.get(req.params.itemId)
@@ -130,7 +131,7 @@ module.exports = (db) => {
     res.redirect(`/wishlist/${req.params.user}`)
   })
 
-  router.post('/:user/remove/:itemId', verifyAuth(), async (req, res) => {
+  router.post('/:user/remove/:itemId', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const item = await wishlist.get(req.params.itemId)
@@ -151,7 +152,7 @@ module.exports = (db) => {
     res.redirect(`/wishlist/${req.params.user}`)
   })
 
-  router.post('/:user/move/:direction/:itemId', verifyAuth(), async (req, res) => {
+  router.post('/:user/move/:direction/:itemId', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       if (req.user._id !== req.params.user) {
         throw new Error(_CC.lang('WISHLIST_MOVE_GUARD'))
@@ -177,7 +178,7 @@ module.exports = (db) => {
     res.redirect(`/wishlist/${req.params.user}`)
   })
 
-  router.get('/:user/note/:id', verifyAuth(), async (req, res) => {
+  router.get('/:user/note/:id', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const item = await wishlist.get(req.params.id)
@@ -188,7 +189,7 @@ module.exports = (db) => {
     }
   })
 
-  router.post('/:user/note/:id', verifyAuth(), async (req, res) => {
+  router.post('/:user/note/:id', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const item = await wishlist.get(req.params.id)
@@ -209,7 +210,7 @@ module.exports = (db) => {
     }
   })
 
-  router.post('/:user/refresh/:id', verifyAuth(), async (req, res) => {
+  router.post('/:user/refresh/:id', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       const wishlist = await wishlistManager.get(req.params.user)
       const item = await wishlist.get(req.params.id)

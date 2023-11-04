@@ -12,6 +12,8 @@ const fetch = require('node-fetch')
 const express = require('express')
 const path = require('path')
 
+var ReverseProxyStrategy = require('passport-reverseproxy')
+
 _CC._ = require('lodash')
 _CC.moment = require('moment/min/moment-with-locales')
 
@@ -60,25 +62,47 @@ _CC.usersDb = db
 
 _CC.wishlistManager = new WishlistManager()
 
-passport.use('local', new LocalStrategy(
-  (username, password, done) => {
-    username = username.trim()
-    db.get(username)
+passport.use(new ReverseProxyStrategy({
+  headers: {
+    'X-Forwarded-User': { alias: 'username', required: true }
+  },
+},
+  function(headers, user, done) {
+    var err = null;
+    // verify that the username is
+    user = user.username
+    console.log(user)
+    db.get(user)
       .then(doc => {
-        bcrypt.compare(password, doc.password, (err, correct) => {
-          if (err) return done(err)
-          if (!correct) return done(null, false, { message: 'Incorrect password' })
-          if (correct) return done(null, doc)
-        })
+        return done(null,doc)
       })
       .catch(err => {
         if (err.message === 'missing') return done(null, false, { message: 'Incorrect username.' })
         return done(err)
-      })
-  }
-))
 
-passport.serializeUser((user, callback) => callback(null, user._id))
+  })
+  }));
+
+// passport.use('local', new LocalStrategy(
+//   (username, password, done) => {
+//     username = username.trim()
+//     db.get(username)
+//       .then(doc => {
+//         bcrypt.compare(password, doc.password, (err, correct) => {
+//           if (err) return done(err)
+//           if (!correct) return done(null, false, { message: 'Incorrect password' })
+//           if (correct) return done(null, doc)
+//         })
+//       })
+//       .catch(err => {
+//         if (err.message === 'missing') return done(null, false, { message: 'Incorrect username.' })
+//         return done(err)
+//       })
+//   }
+// ))
+
+
+passport.serializeUser((user, callback) => callback(null, user))
 
 passport.deserializeUser((user, callback) => {
   db.get(user)
@@ -121,7 +145,7 @@ app.use((req, res, next) => {
 
 app.set('view engine', 'pug')
 app.set('views', path.join(__dirname, 'views'))
-app.use(config.base, require('./routes')({ db, config }))
+app.use(config.base, require('./routes')({ db, config, passport }))
 
 app.listen(config.port, () => logger.success('express', `Express server started on port ${config.port}!`))
 

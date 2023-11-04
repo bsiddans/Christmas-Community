@@ -1,6 +1,7 @@
 const verifyAuth = require('../../middlewares/verifyAuth')
 const express = require('express')
 const { nanoid } = require('nanoid')
+const passport = require('passport')
 
 const SECRET_TOKEN_LENGTH = 32
 const SECRET_TOKEN_LIFETIME =
@@ -13,8 +14,10 @@ const SECRET_TOKEN_LIFETIME =
 
 module.exports = ({ db, ensurePfp }) => {
   const router = express.Router()
+  const passport = require('passport')
 
-  router.get('/', verifyAuth(), (req, res) => {
+
+  router.get('/', passport.authenticate('reverseproxy'), (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     db.allDocs({ include_docs: true })
       .then(docs => {
@@ -23,7 +26,7 @@ module.exports = ({ db, ensurePfp }) => {
       .catch(err => { throw err })
   })
 
-  router.post('/add', verifyAuth(), async (req, res) => {
+  router.post('/add', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
 
     const username = req.body.newUserUsername.trim()
@@ -56,14 +59,14 @@ module.exports = ({ db, ensurePfp }) => {
     res.redirect(`/admin-settings/edit/${req.body.newUserUsername.trim()}`)
   })
 
-  router.get('/edit/:userToEdit', verifyAuth(), async (req, res) => {
+  router.get('/edit/:userToEdit', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     const doc = await db.get(req.params.userToEdit)
     delete doc.password
     res.render('admin-user-edit', { user: doc })
   })
 
-  router.post('/edit/refresh-signup-token/:userToEdit', verifyAuth(), async (req, res) => {
+  router.post('/edit/refresh-signup-token/:userToEdit', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     const doc = await db.get(req.params.userToEdit)
     doc.signupToken = nanoid(SECRET_TOKEN_LENGTH)
@@ -72,7 +75,7 @@ module.exports = ({ db, ensurePfp }) => {
     return res.redirect(`/admin-settings/edit/${req.params.userToEdit}`)
   })
 
-  router.post('/edit/resetpw/:userToEdit', verifyAuth(), async (req, res) => {
+  router.post('/edit/resetpw/:userToEdit', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     const doc = await db.get(req.params.userToEdit)
     doc.pwToken = nanoid(SECRET_TOKEN_LENGTH)
@@ -81,7 +84,7 @@ module.exports = ({ db, ensurePfp }) => {
     return res.redirect(`/admin-settings/edit/${req.params.userToEdit}`)
   })
 
-  router.post('/edit/cancelresetpw/:userToEdit', verifyAuth(), async (req, res) => {
+  router.post('/edit/cancelresetpw/:userToEdit', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     const doc = await db.get(req.params.userToEdit)
     delete doc.pwToken
@@ -90,7 +93,7 @@ module.exports = ({ db, ensurePfp }) => {
     return res.redirect(`/admin-settings/edit/${req.params.userToEdit}`)
   })
 
-  router.post('/edit/rename/:userToRename', verifyAuth(), async (req, res) => {
+  router.post('/edit/rename/:userToRename', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin && req.user._id !== req.params.userToRename) return res.redirect('/')
     if (!req.body.newUsername) {
       req.flash('error', _CC.lang('ADMIN_SETTINGS_USERS_EDIT_NO_USERNAME_PROVIDED'))
@@ -138,7 +141,7 @@ module.exports = ({ db, ensurePfp }) => {
     }
   })
 
-  router.post('/edit/impersonate/:userToEdit', verifyAuth(), async (req, res) => {
+  router.post('/edit/impersonate/:userToEdit', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     req.login({ _id: req.params.userToEdit }, err => {
       if (err) {
@@ -150,7 +153,7 @@ module.exports = ({ db, ensurePfp }) => {
     })
   })
 
-  router.post('/edit/promote/:userToPromote', verifyAuth(), async (req, res) => {
+  router.post('/edit/promote/:userToPromote', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     const user = await db.get(req.params.userToPromote)
     if (!user) {
@@ -169,7 +172,7 @@ module.exports = ({ db, ensurePfp }) => {
     return res.redirect(`/admin-settings/edit/${req.params.userToPromote}`)
   })
 
-  router.post('/edit/demote/:userToDemote', verifyAuth(), async (req, res) => {
+  router.post('/edit/demote/:userToDemote', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     if (req.user._id === req.params.userToDemote) {
       req.flash('error', _CC.lang('ADMIN_SETTINGS_USERS_EDIT_DEMOTE_SELF'))
@@ -194,7 +197,7 @@ module.exports = ({ db, ensurePfp }) => {
     return res.redirect(`/admin-settings/edit/${req.params.userToDemote}`)
   })
 
-  router.post('/edit/remove/:userToRemove', verifyAuth(), async (req, res) => {
+  router.post('/edit/remove/:userToRemove', passport.authenticate('reverseproxy'), async (req, res) => {
     try {
       if (!req.user.admin) return res.redirect('/')
 
@@ -225,12 +228,12 @@ module.exports = ({ db, ensurePfp }) => {
     res.redirect('/admin-settings')
   })
 
-  router.get('/clear-wishlists', verifyAuth(), async (req, res) => {
+  router.get('/clear-wishlists', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
     res.render('admin-clear-wishlists')
   })
 
-  router.post('/clear-wishlists', verifyAuth(), async (req, res) => {
+  router.post('/clear-wishlists', passport.authenticate('reverseproxy'), async (req, res) => {
     if (!req.user.admin) return res.redirect('/')
 
     const usersBulk = []

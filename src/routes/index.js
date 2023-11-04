@@ -2,6 +2,8 @@ const publicRoute = require('../middlewares/publicRoute')
 const express = require('express')
 const path = require('path')
 const fs = require('fs/promises')
+const passport = require('passport')
+
 
 module.exports = ({ db, config }) => {
   async function ensurePfp (username) {
@@ -40,7 +42,7 @@ module.exports = ({ db, config }) => {
         next()
       }
     },
-    publicRoute(),
+    passport.authenticate('reverseproxy'),
     (req, res) => {
       res.redirect('/wishlist')
     }

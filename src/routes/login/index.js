@@ -19,7 +19,7 @@ module.exports = () => {
     (req, res, next) => {
       next()
     },
-    passport.authenticate('local', {
+    passport.authenticate('reverseproxy', {
       successRedirect: '/',
       failureRedirect: '/login',
       failureFlash: 'Invalid username or password'

@@ -1,16 +1,17 @@
 const verifyAuth = require('../../middlewares/verifyAuth')
 const bcrypt = require('bcrypt-nodejs')
 const express = require('express')
+const passport = require('passport')
 
 module.exports = ({ db, config, ensurePfp }) => {
   const router = express.Router()
 
-  router.get('/', verifyAuth(), async (req, res) => {
+  router.get('/', passport.authenticate('reverseproxy'), async (req, res) => {
     await ensurePfp(req.user._id)
     res.render('profile', { title: _CC.lang('PROFILE_TITLE', req.user._id) })
   })
 
-  router.post('/pfp', verifyAuth(), async (req, res) => {
+  router.post('/pfp', passport.authenticate('reverseproxy'), async (req, res) => {
     if (config.pfp) {
       req.user.pfp = req.body.image
       await db.put(req.user)
@@ -22,11 +23,11 @@ module.exports = ({ db, config, ensurePfp }) => {
     res.redirect('/profile')
   })
 
-  router.get('/password', verifyAuth(), async (req, res) => {
+  router.get('/password', passport.authenticate('reverseproxy'), async (req, res) => {
     await ensurePfp(req.user._id)
     res.render('profile-password', { title: _CC.lang('PROFILE_PASSWORD_TITLE', req.user._id) })
   })
-  router.post('/password', verifyAuth(), (req, res) => {
+  router.post('/password', passport.authenticate('reverseproxy'), (req, res) => {
     if (!req.body.oldPassword) {
       req.flash('error', _CC.lang('PROFILE_PASSWORD_REQUIRED_OLD'))
       return res.redirect('/profile/password')
